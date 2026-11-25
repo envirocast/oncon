@@ -26,6 +26,7 @@ export default function Dashboard() {
           {plan.map((id, i) => <div key={id} className="step" style={{ alignItems: "center" }}><input type="checkbox" checked={!!done[id]} onChange={() => setDone({ ...done, [id]: !done[id] })} aria-label={`Mark ${id} done`} />
             <span style={{ flex: 1 }}><Link href={`/procedures/${id}`}>{TOPICS.find(t => t.id === id)?.title}</Link><div className="muted">Recommended because you selected it.</div></span>
             <button className="btn alt sm" onClick={() => move(i, -1)} aria-label="Move up"><ChevronUp size={14} /></button><button className="btn alt sm" onClick={() => move(i, 1)} aria-label="Move down"><ChevronDown size={14} /></button></div>)}</>}
+        <p className="muted"><Link href="/journey">View activity-based care journey</Link> · walkthroughs and topic activity are tracked separately from these checkboxes.</p>
       </div>
       <div className="card"><h2>Continue learning</h2>
         {viewed.length ? <div className="chips">{viewed.slice(0, 5).map(id => <Link key={id} href={`/procedures/${id}`} className="chip" style={{ textDecoration: "none" }}>{TOPICS.find(t => t.id === id)?.title}</Link>)}</div> : <p className="muted">Topics you ask about will show up here.</p>}

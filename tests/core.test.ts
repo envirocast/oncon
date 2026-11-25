@@ -4,6 +4,8 @@ import { applySignals, detectSignals, DEFAULT_MEMORY } from "@/lib/memory";
 import { mean, sd, welch } from "@/lib/stats";
 import { respond, matchTopic, DEFAULT_PROFILE } from "@/lib/engine";
 import { cleanHistory, cleanProfile } from "@/lib/pipeline";
+import { TOPICS } from "@/lib/content";
+import { SOURCES, topicCitations } from "@/lib/sources";
 
 describe("metrics", () => {
   it("scores simple text lower than dense text", () => {
@@ -45,8 +47,26 @@ describe("stats", () => {
 
 describe("engine", () => {
   it("matches the longest keyword", () => { expect(matchTopic("what is a ct scan")?.topic.id).toBe("ct"); });
+  it("provides at least one valid source reference for every supported topic", () => {
+    const sourceIds = new Set(SOURCES.map(source => source.id));
+    for (const topic of TOPICS) {
+      const refs = topicCitations(topic.id);
+      expect(refs.length, topic.id).toBeGreaterThan(0);
+      expect(refs.every(ref => sourceIds.has(ref.id)), topic.id).toBe(true);
+    }
+  });
+  it("uses short chunks and a selected concern in the offline answer", () => {
+    const r = respond("what is a biopsy", {
+      ...DEFAULT_PROFILE,
+      learningPreferences: ["short_chunks"],
+      concerns: ["I'm worried about pain or discomfort"],
+    }, null);
+    expect(r.text).toContain("\n\nA specialist looks");
+    expect(r.text).toContain("You can ask your care team what comfort options are planned.");
+    expect(r.adaptations).toContain("STATED_CONCERN_CONTEXT");
+  });
   it("routes distress language to the fixed safety message and skips personalization", () => {
-    const r = respond("i want to die", DEFAULT_PROFILE, null, DEFAULT_MEMORY); expect(r.safety).toBe("SUPPORT_REDIRECT"); expect(r.text).toMatch(/trusted adult/i); expect(r.plan).toBeUndefined();
+    const r = respond("i want to die", DEFAULT_PROFILE, null, DEFAULT_MEMORY); expect(r.safety).toBe("SUPPORT_REDIRECT"); expect(r.text).toMatch(/trusted adult/i); expect(r.references?.[0].id).toBe("988-lifeline"); expect(r.plan).toBeUndefined();
   });
   it("flags individual-advice questions", () => { expect(respond("should i stop taking my medicine", DEFAULT_PROFILE, null).safety).toBe("INDIVIDUAL_ADVICE_REDIRECT"); });
   it("shifts the level down after the user says they are confused", () => {
@@ -64,8 +84,9 @@ describe("engine", () => {
 
 describe("input sanitising", () => {
   it("coerces junk profiles to safe defaults", () => {
-    const p = cleanProfile({ age: "99" as never, role: "admin" as never, notes: "x".repeat(9000), format: ["steps", "hack"] as never, lang: "klingon" });
+    const p = cleanProfile({ age: "99" as never, role: "admin" as never, notes: "x".repeat(9000), format: ["steps", "hack"] as never, lang: "klingon", learningPreferences: ["literal", "random"] as never });
     expect(p.age).toBe(DEFAULT_PROFILE.age); expect(p.role).toBe("child"); expect(p.notes.length).toBe(4000); expect(p.format).toEqual(["steps"]); expect(p.lang).toBe("en");
+    expect(p.learningPreferences).toEqual(["literal"]);
   });
   it("history alternates roles, starts with the user and is capped", () => {
     const h = cleanHistory([{ role: "bot", text: "hi" }, { role: "user", text: "a" }, { role: "user", text: "b" }, { role: "bot", text: "c" }, ...Array.from({ length: 20 }, (_, i) => ({ role: (i % 2 ? "bot" : "user") as "bot" | "user", text: "m" + i }))]);

@@ -11,7 +11,7 @@ export const ADAPT_LABEL: Record<string, string> = {
   DEVELOPMENTAL_ADAPTATION: "Adjusted complexity to the age profile", VOCABULARY_DEFINED: "Defined unfamiliar medical words", STEPWISE_EXPLANATION: "Used step-by-step explanations",
   EXAMPLE_ADDED: "Added familiar comparisons", SHORT_FORMAT: "Kept the explanation short", SIMPLIFIED_ON_REQUEST: "Simplified when asked", EXPANDED_ON_REQUEST: "Added detail when asked",
   MEMORY_SIMPLIFIED: "Used chat memory to lower the level", MEMORY_EXPANDED: "Used chat memory to raise the level", CONFUSION_SCAFFOLDING: "Added extra support after confusion", ALTERNATE_STRATEGY: "Switched to a different explanation approach",
-  GENERAL_KNOWLEDGE_ANSWER: "Answered from general knowledge (no approved content matched)", SAFETY_INDIVIDUAL_ADVICE_REDIRECT: "Pointed a personal medical question to the care team", SAFETY_SUPPORT_REDIRECT: "Encouraged talking to a trusted adult",
+  SAFETY_INDIVIDUAL_ADVICE_REDIRECT: "Pointed a personal medical question to the care team", SAFETY_SUPPORT_REDIRECT: "Encouraged talking to a trusted adult",
 };
 export const adaptLabel = (a: string) => ADAPT_LABEL[a] ?? a.toLowerCase().replaceAll("_", " ");
 
@@ -86,6 +86,15 @@ export function reportMarkdown(d: ReportData, title: string): string {
   L.push("", "## What changed and why", "");
   d.turns.forEach(t => { L.push(`**${t.n}. ${t.question || "(no question)"}**`, ...t.reply.adaptations.map(a => `- ${adaptLabel(a)}`), ""); });
   if (d.safeguards.length) { L.push("## Rules that fired", "", ...d.safeguards.map(s => `- Reply ${s.turn}, ${s.name}: ${s.result}`), ""); }
+  const refs = new Map<string, { title: string; publisher: string; url: string; replies: number[] }>();
+  d.turns.forEach(t => (t.reply.references ?? []).forEach(ref => {
+    const entry = refs.get(ref.id) ?? { ...ref, replies: [] };
+    entry.replies.push(t.n); refs.set(ref.id, entry);
+  }));
+  L.push("## Sources", "");
+  if (refs.size) for (const ref of refs.values()) L.push(`- Replies ${ref.replies.join(", ")}: [${ref.title}](${ref.url}) — ${ref.publisher}`);
+  else L.push("- No mapped source links were recorded for these answers.");
+  L.push("");
   L.push("## Method and limits", "", "- Reading grade is the Flesch–Kincaid formula (English only); coverage is a keyword heuristic. Neither is a clinical measure.", "- Memory updates come from keyword rules, not a validated psychological model.",
     "- Understanding was not assessed. This is general education, not advice about anyone's own care.", d.offlineTurns ? `- ${d.offlineTurns} ${d.offlineTurns === 1 ? "answer was" : "answers were"} written by the built-in template engine, not the AI model.` : "");
   return L.join("\n");
@@ -127,7 +136,7 @@ export function checks(t: Turn): Check[] {
   return [
     { id: "level", label: "Reading level within 2 grades of target", state: t.within == null ? "na" : t.within ? "yes" : "no", detail: t.gap == null ? "Not measured (non-English or no target)" : `Grade ${t.grade} against target ${t.target}` },
     { id: "length", label: "Length within 10% of the word cap", state: t.words == null || t.maxWords == null ? "na" : t.words <= t.maxWords * 1.1 ? "yes" : "no", detail: t.words == null || t.maxWords == null ? "Not measured" : `${t.words} words, cap ${t.maxWords}` },
-    { id: "grounded", label: "Grounded in approved content", state: t.reply.source ? "yes" : "na", detail: t.reply.source ? `Coverage ${Math.round((t.reply.coverage ?? 0) * 100)}% of key concepts (heuristic)` : "Answered from general knowledge" },
+    { id: "grounded", label: "Grounded in source-linked content", state: t.reply.source ? "yes" : "na", detail: t.reply.source ? `Coverage ${Math.round((t.reply.coverage ?? 0) * 100)}% of key concepts (heuristic)` : "No matching topic; no source-based medical answer was generated" },
     { id: "safety", label: "No safety rule needed to fire", state: fired.length ? "note" : "yes", detail: fired.length ? `Fired: ${fired.map(s => s.name.replaceAll("_", " ").toLowerCase()).join(", ")}` : "Advice and distress checks passed" },
     { id: "guard", label: "Model output passed the guard", state: !guard ? "na" : guard.status === "triggered" ? "note" : "yes", detail: !guard ? "No model output to check" : guard.status === "triggered" ? "The output guard replaced the draft" : "No dosing or prognosis language" },
     { id: "valid", label: "Passed the reading-level validator", state: !val ? "na" : val.status === "triggered" ? "no" : "yes", detail: val ? val.result : "No validation step recorded" },

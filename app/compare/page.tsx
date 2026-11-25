@@ -21,7 +21,7 @@ export default function Compare() {
       <div className="muted">Reading grade {r.m.grade}</div><div className="bar" style={{ margin: "4px 0 10px" }}><i style={{ width: `${(r.m.grade / max) * 100}%` }} /></div>
       <div className="muted">{r.m.words} words · {r.m.avgSentence} words/sentence</div></div>))}</div>
     <div className="card" style={{ marginTop: 20 }}><h2>Preserved core concepts</h2>
-      <p className="muted">Concepts the approved content ties to this topic. Wording changes across ages; the facts do not.</p>
+      <p className="muted">Concepts the source-linked draft content ties to this topic. Wording changes across ages; facts are intended to remain the same.</p>
       <div>{[t.title, ...t.terms].map(c => <span key={c} className="tagl">{c}</span>)}</div>
       <h3 style={{ marginTop: 18 }}>Teaching strategy by age</h3>
       <table><tbody>{[["6–8", "One concept at a time, concrete analogy, short sentences"], ["9–11", "Cause and effect, correct vocabulary introduced with definitions"], ["12–14", "More detail, optional technical terms, autonomy"], ["15–17", "Direct, technical, honest about uncertainty"]].map(([a, s]) => <tr key={a}><td><b>{a}</b></td><td>{s}</td></tr>)}</tbody></table></div></>);

@@ -2,14 +2,14 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Activity, Bone, BookOpen, Bookmark, Calculator, ChartLine, ChevronDown, ChevronsLeft, Cloud, ChevronsRight, CircleHelp, ClipboardCheck, FileText, FlaskConical, GitCompare, HeartPulse, LayoutDashboard, Library, Lock, Menu, MessageSquarePlus, Microscope, Moon, PenLine, Plus, ScrollText, Search, ShieldCheck, Stethoscope, Sun, UserRound, Users, X, Sigma, type LucideIcon } from "lucide-react";
+import { Activity, Bone, BookOpen, Bookmark, Calculator, ChartLine, ChevronDown, ChevronsLeft, Cloud, ChevronsRight, CircleHelp, ClipboardCheck, FileText, FlaskConical, GitCompare, HeartPulse, History, LayoutDashboard, Library, Lock, Menu, MessageSquarePlus, Microscope, Moon, PenLine, Plus, Route, ScrollText, Search, ShieldCheck, Stethoscope, Sun, UserRound, Users, X, Sigma, type LucideIcon } from "lucide-react";
 import { useChat } from "@/lib/chat";
 
 const GROUPS: [string, [string, string, LucideIcon][]][] = [
-  ["Learn", [["/dashboard", "Dashboard", LayoutDashboard], ["/procedures", "Procedure explorer", Stethoscope], ["/anatomy", "Anatomy", Bone], ["/words", "Medical words", BookOpen]]],
-  ["Support", [["/feelings", "My feelings", HeartPulse], ["/questions", "My questions", CircleHelp], ["/family", "Family & school", Users]]],
-  ["Research", [["/study", "Comprehension study", FlaskConical], ["/protocol", "Protocol & power", Calculator], ["/eval", "Evaluation harness", Activity], ["/analysis", "Data analysis", Sigma], ["/research", "Research dashboard", ChartLine], ["/compare", "Compare ages", GitCompare], ["/literature", "Literature map", Library], ["/log", "Audit log", ScrollText], ["/clinician", "Clinician review", ClipboardCheck], ["/method", "Method", Microscope], ["/paper", "Paper draft", PenLine]]],
-  ["You", [["/report", "Session report", FileText], ["/library", "Saved", Bookmark], ["/setup", "My profile", UserRound], ["/account", "Account & sync", Cloud], ["/privacy", "Privacy & data", Lock]]],
+  ["Learn", [["/dashboard", "Dashboard", LayoutDashboard], ["/journey", "My care journey", Route], ["/procedures", "Procedure explorer", Stethoscope], ["/anatomy", "Anatomy", Bone], ["/words", "Medical words", BookOpen]]],
+  ["Support", [["/feelings", "My feelings", HeartPulse], ["/questions", "My questions", CircleHelp], ["/family", "Family & school", Users], ["/caregiver", "Caregiver portal", Users]]],
+  ["Research", [["/study", "Comprehension study", FlaskConical], ["/protocol", "Protocol & power", Calculator], ["/eval", "Evaluation harness", Activity], ["/analysis", "Data analysis", Sigma], ["/research", "Research dashboard", ChartLine], ["/compare", "Compare ages", GitCompare], ["/literature", "Literature map", Library], ["/log", "Audit log", ScrollText], ["/clinician", "Clinician review", ClipboardCheck], ["/admin", "Administration", ShieldCheck], ["/method", "Method", Microscope], ["/paper", "Paper draft", PenLine]]],
+  ["You", [["/personalization-history", "Personalization history", History], ["/report", "Session report", FileText], ["/library", "Saved", Bookmark], ["/setup", "My profile", UserRound], ["/account", "Account & sync", Cloud], ["/privacy", "Privacy & data", Lock]]],
 ];
 const PAGES = GROUPS.flatMap(([, l]) => l);
 
@@ -60,7 +60,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     {side && <div className="scrim" onClick={() => setSide(false)} />}
     <div className="mainpane" id="main" tabIndex={-1}>
       <div className="topbar"><button className="ib" onClick={() => setSide(true)} aria-label="Open menu"><Menu size={18} /></button><Link href="/" className="logo"><span className="mark"><i /></span>Onconnect</Link><span className="grow" /><button className="ib" onClick={startChat} aria-label="New chat"><Plus size={18} /></button></div>
-      {isChat ? children : <div className="page"><div className="pagein">{children}</div><footer className="foot">Onconnect is a research prototype for general education. It does not replace your doctors, nurses, or other healthcare professionals. Content is draft and pending clinician review. Data stays in this browser.</footer></div>}
+      {isChat ? children : <div className="page"><div className="pagein">{children}</div><footer className="foot">Onconnect is a research prototype for general education. It does not replace your doctors, nurses, or other healthcare professionals. Built-in content is draft unless an approved version is available. Data is local by default; optional cloud and sharing features require sign-in and consent.</footer></div>}
     </div>
     {pal && <div className="overlay" onClick={() => setPal(false)}><div className="pal" role="dialog" aria-label="Jump to" onClick={e => e.stopPropagation()}>
       <div className="palin"><Search size={16} /><input autoFocus type="text" value={q} onChange={e => setQ(e.target.value)} placeholder="Jump to a page…" aria-label="Jump to" onKeyDown={e => { if (e.key === "Enter" && items[0]) go(items[0][0]); }} /></div>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SYNC_KEYS, isList, isSyncKey, mergeLists, planSync } from "@/lib/sync";
+import { SYNC_KEYS, isList, isSyncKey, mergeLists, planSync, shouldClearLocalForUserSwitch } from "@/lib/sync";
 import { answerRow, ratingRow, studyRow } from "@/lib/research";
 
 describe("mergeLists", () => {
@@ -48,7 +48,14 @@ describe("planSync", () => {
 });
 
 describe("sync keys", () => {
+  it("clears local account data only when switching between known accounts", () => {
+    expect(shouldClearLocalForUserSwitch("user-a", "user-b")).toBe(true);
+    expect(shouldClearLocalForUserSwitch(null, "user-a")).toBe(false);
+    expect(shouldClearLocalForUserSwitch("user-a", "user-a")).toBe(false);
+    expect(shouldClearLocalForUserSwitch("user-a", null)).toBe(false);
+  });
   it("never include device-only settings", () => { for (const k of ["onc.theme", "onc.size", "onc.rail", "onc.syncmeta", "onc.share", "onc.eval"]) expect(isSyncKey(k)).toBe(false); });
+  it("syncs procedure journey progress as an object, not a list", () => { expect(isSyncKey("onc.procedures")).toBe(true); expect(isList("onc.procedures")).toBe(false); });
   it("knows which keys are lists", () => { expect(isList("onc.convos")).toBe(true); expect(isList("onc.profile")).toBe(false); expect(SYNC_KEYS.length).toBeGreaterThan(10); });
 });
 

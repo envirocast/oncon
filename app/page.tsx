@@ -13,7 +13,7 @@ const ASKS = ["What is an MRI?", "What happens during a biopsy?", "What is a CT 
 const STEPS: [string, string][] = [
   ["Profile", "Age band, preferred detail, language and notes set the starting reading level."],
   ["Memory", "Saying “simpler” or “I don't get it” shifts later answers, and the shift is stored per topic."],
-  ["Generate", "A language model writes from approved content when there is some, and from general knowledge when not."],
+  ["Generate", "A language model may rewrite matched, source-linked content; unsupported topics are not answered from general model knowledge."],
   ["Check", "Reading grade, length and safety are measured against the target, and every step is logged."],
 ];
 const RESEARCH: [string, string, string][] = [
@@ -57,7 +57,7 @@ function Demo() {
           {after && <div><dt>After “I don&apos;t get it”</dt><dd className="small">Grade {m1.grade} to {m2.grade}. Memory carried: level shift {second.memory.levelShift}, scaffolding {second.memory.scaffold}.</dd></div>}
         </dl>
       </div>
-      <div className="framefoot">Runs in your browser on the built-in approved-content engine, so you are seeing real numbers, not a mock-up. The live chat uses a language model and the same checks.</div>
+      <div className="framefoot">Runs in your browser on the built-in source-linked content engine, so you are seeing real numbers, not a mock-up. The live chat uses a language model only when a source-linked topic matches.</div>
     </div>
   );
 }
@@ -101,9 +101,9 @@ export default function Landing() {
 
       <section className="lpsec" id="care"><div className="lpcol"><div className="eyebrow">Care</div><h2 className="big">Built to be trusted with children.</h2>
         <div className="three">
-          <div><h3>Local first</h3><p>Your profile, chats and notes stay in your browser. Signing in to sync is optional, and sharing anonymised usage for research is a separate, off-by-default choice.</p></div>
+          <div><h3>Local first</h3><p>Your profile, chats and notes stay in your browser unless you sign in to sync them. Pseudonymized research measurements are a separate, off-by-default choice; they are not anonymous.</p></div>
           <div><h3>Honest about limits</h3><p>It will not diagnose, give doses or discuss prognosis. Safety rules run before and after the model, and the answer says when it is only general education.</p></div>
-          <div><h3>Open to review</h3><p>Every answer lists what it used, what it changed and what it did not do. Clinicians can rate any answer, and ratings feed the research tools.</p></div>
+          <div><h3>Open to review</h3><p>Answers show mapped sources and adaptation details. With the database workflow configured, role-verified clinicians can review staged educational topic versions; they do not rate personal chats or see patient records.</p></div>
         </div></div></section>
 
       <section className="lpend"><h2 className="big">Ask your first question.</h2><Link href="/chat" className="pbtn light lg">Open Onconnect <ArrowUpRight size={16} /></Link></section>

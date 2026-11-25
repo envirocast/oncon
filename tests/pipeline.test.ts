@@ -3,6 +3,9 @@ import { startMock, type Mock } from "./helpers";
 import { run } from "@/lib/pipeline";
 import { generateStream } from "@/lib/gemini";
 import { DEFAULT_PROFILE } from "@/lib/engine";
+import { TOPICS } from "@/lib/content";
+import { TOPIC_SOURCE_IDS } from "@/lib/sources";
+import { parseContentVersion } from "@/lib/approvedContent";
 
 let mock: Mock;
 beforeAll(async () => { mock = await startMock(); process.env.GEMINI_BASE = mock.url; process.env.GEMINI_API_KEY = "test-key"; delete process.env.OPENROUTER_API_KEY; delete process.env.LLM_PROVIDER; });
@@ -26,9 +29,9 @@ describe("pipeline with a model", () => {
     expect(deltas.join("")).toBe(r.text); expect(r.model).toBe("gemini-3-flash-preview"); expect(r.metrics!.words).toBeGreaterThan(5);
     expect(r.trace.map(t => t.name)).toEqual(expect.arrayContaining(["GENERATE", "OUTPUT_GUARD", "VALIDATE", "LOG"]));
   });
-  it("sends the conversation history and uses the approved content as grounding", async () => {
+  it("sends conversation history and grounds generation in curated source-linked content", async () => {
     await run({ ...base, question: "explain that more simply", lastTopic: "biopsy", history: [{ role: "user", text: "what is a biopsy" }, { role: "bot", text: "A biopsy is a sample." }] });
-    const c = mock.calls.at(-1)!; expect(c.turns).toBe(3); expect(c.system).toContain("Approved content"); expect(c.system).toContain("biopsy");
+    const c = mock.calls.at(-1)!; expect(c.turns).toBe(3); expect(c.system).toContain("Curated source-linked topic content"); expect(c.system).toContain("biopsy");
   });
   it("asks for the selected language and skips the English-only grade check", async () => {
     const r = await run({ ...base, profile: { ...base.profile, lang: "es" }, question: "what is an mri" });
@@ -40,7 +43,47 @@ describe("pipeline with a model", () => {
   });
   it("appends a care-team redirect if the model drifts into dosing or prognosis", async () => {
     mock.setText("You should take 500 mg twice a day. Your prognosis is good.");
-    const r = await run({ ...base, question: "tell me about tylenol" }); expect(r.text).toMatch(/care team/i); expect(r.adaptations).toContain("OUTPUT_GUARD_REDIRECT");
+    const r = await run({ ...base, question: "what is a biopsy" }); expect(r.text).toMatch(/care team/i); expect(r.adaptations).toContain("OUTPUT_GUARD_REDIRECT");
+  });
+  it("includes authoritative references for supported answers", async () => {
+    const r = await run({ ...base, question: "what is a biopsy" });
+    expect(r.references?.map(s => s.id)).toEqual(["nci-diagnosis", "radiology-biopsy"]);
+    expect(mock.calls.at(-1)!.system).toContain("RadiologyInfo.org");
+  });
+  it("uses only validated clinician-approved versions when available", async () => {
+    const topic = TOPICS.find(item => item.id === "biopsy")!;
+    const updated = { ...topic, why: { ...topic.why, "9-11": "A clinician-reviewed biopsy explanation for this approved version." } };
+    const approved = parseContentVersion({
+      id: "approved-version", topic_id: topic.id, version: 3, payload: updated,
+      source_ids: TOPIC_SOURCE_IDS[topic.id], status: "approved", created_by: "admin", created_at: new Date().toISOString(),
+    });
+    expect(approved).not.toBeNull();
+    const r = await run({ ...base, question: "what is a biopsy" }, undefined, undefined, approved!);
+    expect(mock.calls.at(-1)!.system).toContain("clinician-reviewed biopsy explanation");
+    expect(r.source).toContain("Clinician-reviewed content v3");
+    expect(r.trace.find(step => step.name === "CONTENT_VERSION")?.result).toContain("approved version 3");
+  });
+  it("reports when a matched topic falls back to draft content", async () => {
+    const warning = "No clinician-approved version is available for this topic; built-in source-linked draft content was used.";
+    const r = await run({ ...base, question: "what is a biopsy" }, undefined, undefined, undefined, warning);
+    expect(r.notDone).toContain(warning);
+    expect(r.trace.find(step => step.name === "CONTENT_VERSION")?.result).toBe(warning);
+  });
+  it("does not generate unsupported medical answers from model knowledge", async () => {
+    const r = await run({ ...base, question: "tell me about a medicine not in the guide" });
+    expect(mock.calls.length).toBe(0);
+    expect(r.topicId).toBeNull();
+    expect(r.references).toBeUndefined();
+    expect(r.text).toMatch(/Which one would you like to learn about/);
+  });
+  it("uses the selected role, accessibility preferences, and concerns as communication context", async () => {
+    await run({ ...base, profile: { ...base.profile, role: "caregiver", learningPreferences: ["literal", "predictable", "low_sensory"], concerns: ["I'm worried about pain or discomfort"] }, question: "what is a biopsy" });
+    const system = mock.calls.at(-1)!.system;
+    expect(system).toMatch(/parent or caregiver/);
+    expect(system).toMatch(/Avoid idioms/);
+    expect(system).toMatch(/before, during, and after/);
+    expect(system).toMatch(/Keep sound, touch, and other sensory descriptions brief/);
+    expect(system).toMatch(/pain or discomfort/);
   });
   it("never calls the model for distress messages", async () => {
     const r = await run({ ...base, question: "i want to die" }); expect(r.safety).toBe("SUPPORT_REDIRECT"); expect(mock.calls.length).toBe(0);
@@ -61,4 +104,10 @@ describe("pipeline fallback", () => {
   });
   it("falls back when there is no key at all", async () => { delete process.env.GEMINI_API_KEY; const r = await run({ ...base, question: "what is an mri" }); expect(r.model).toBe("onconnect-templates"); });
   it("falls back on a server error", async () => { mock.setStatus(500); const r = await run({ ...base, question: "what is an mri" }); expect(r.model).toBe("onconnect-templates"); });
+  it("reports when the offline template cannot honor a sensory-detail preference", async () => {
+    delete process.env.GEMINI_API_KEY;
+    const r = await run({ ...base, profile: { ...base.profile, learningPreferences: ["low_sensory"] }, question: "what is an mri" });
+    expect(r.notDone).toContain("The offline template could not reliably apply your preference to keep sensory descriptions brief.");
+    expect(r.adaptations).not.toContain("LOW_SENSORY_DETAIL_PREFERENCE");
+  });
 });

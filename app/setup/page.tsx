@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemory, useProfile } from "@/lib/store";
 import { DEFAULT_MEMORY } from "@/lib/memory";
 import { TOPICS, PROFILES, type Level } from "@/lib/content";
-import type { Profile } from "@/lib/engine";
+import { LEARNING_PREFERENCES, type Profile } from "@/lib/engine";
 import { LANGS } from "@/lib/langs";
 
 const CONCERNS = ["I don't know what will happen", "I'm confused about medical words", "I'm worried about pain or discomfort", "I'm worried about missing school", "I have questions I don't know how to ask"];
@@ -40,7 +40,12 @@ export default function Setup() {
     {step === 2 && <><h1>How should Onconnect explain things?</h1>
       <div className="chips">{(["short", "balanced", "detailed"] as const).map(d => <Chip key={d} on={p.detail === d} onClick={() => setP({ ...p, detail: d })}>{d === "short" ? "Short" : d === "balanced" ? "Balanced" : "Detailed"}</Chip>)}</div>
       <label>Also…</label>
-      <div className="chips">{FORMATS.map(([v, l]) => <Chip key={v} on={p.format.includes(v)} onClick={() => setP({ ...p, format: toggle(p.format, v) })}>{l}</Chip>)}</div></>}
+      <div className="chips">{FORMATS.map(([v, l]) => <Chip key={v} on={p.format.includes(v)} onClick={() => setP({ ...p, format: toggle(p.format, v) })}>{l}</Chip>)}</div>
+      <label>Optional learning and access preferences</label>
+      <p className="muted">Choose communication features that work for you. These are preferences, not diagnoses, and Onconnect will not try to infer a condition.</p>
+      <div className="chips">{LEARNING_PREFERENCES.map(x => <Chip key={x.id} on={(p.learningPreferences ?? []).includes(x.id)} onClick={() => setP({ ...p, learningPreferences: toggle(p.learningPreferences ?? [], x.id) })}>
+        <span><b>{x.label}</b><br /><span className="muted">{x.description}</span></span>
+      </Chip>)}</div></>}
     {step === 3 && <><h1>Tell Onconnect anything</h1>
       <p className="muted">Write as much or as little as you want: what you're going through, what you're worried about, what you've been told, how you like things explained, words you find confusing. This is optional, you can edit it later, and it is not a medical record.</p>
       <textarea className="big" value={p.notes ?? ""} maxLength={4000} onChange={e => setP({ ...p, notes: e.target.value })} placeholder="In your own words…" aria-label="Notes for Onconnect" />
@@ -49,6 +54,7 @@ export default function Setup() {
     {step === 4 && <><h1>Here is what Onconnect knows about how you want to learn</h1>
       <ul><li>Role: {p.role}</li><li>Age range: {p.age} ({PROFILES[p.age]})</li><li>Language: {(LANGS.find(l => l.code === (p.lang ?? "en")) ?? LANGS[0]).native}</li><li>Detail: {p.detail}</li>
         <li>Preferences: {p.format.join(", ") || "none"}</li><li>Topics: {p.topics.map(id => TOPICS.find(t => t.id === id)?.title).join(", ") || "none selected"}</li>
+        <li>Learning/access preferences: {(p.learningPreferences ?? []).map(id => LEARNING_PREFERENCES.find(x => x.id === id)?.label).filter(Boolean).join(", ") || "none selected"}</li>
         <li>Concerns: {p.concerns.join("; ") || "none shared"}</li><li>Your notes: {(p.notes ?? "").trim() ? `${(p.notes ?? "").length} characters (shared with the AI model as unverified context)` : "none"}</li></ul>
       <p className="muted">Entered by you · not verified by a healthcare professional.{saved.updatedAt && ` Last updated ${new Date(saved.updatedAt).toLocaleString()}.`}</p>
       {p.topics.length > 0 && <><h2>Your learning plan</h2><ol>{p.topics.map(id => <li key={id}>Understand: {TOPICS.find(t => t.id === id)?.title} <span className="muted">— recommended because you selected it.</span></li>)}</ol></>}</>}

@@ -2,8 +2,9 @@
 // Rule: never lose data. Lists are unioned by id; single objects are last-write-wins, and on the first sync the local copy wins.
 
 /** localStorage keys that are synced. Theme, text size, eval scratch data and sync bookkeeping stay on the device. */
-export const SYNC_KEYS = ["onc.profile", "onc.convos", "onc.memory", "onc.log", "onc.bookmarks", "onc.feelings", "onc.qs", "onc.study", "onc.ratings", "onc.viewed", "onc.words", "onc.plan", "onc.journal", "onc.saved", "onc.protocol", "onc.ethics"] as const;
+export const SYNC_KEYS = ["onc.profile", "onc.convos", "onc.memory", "onc.log", "onc.bookmarks", "onc.feelings", "onc.qs", "onc.study", "onc.ratings", "onc.viewed", "onc.words", "onc.plan", "onc.journal", "onc.saved", "onc.protocol", "onc.ethics", "onc.procedures"] as const;
 export const isSyncKey = (k: string): boolean => (SYNC_KEYS as readonly string[]).includes(k);
+export const shouldClearLocalForUserSwitch = (previous: string | null, current: string | null): boolean => Boolean(previous && current && previous !== current);
 /** Keys that hold lists of records and can be merged instead of overwritten. */
 const LISTS = new Set(["onc.convos", "onc.log", "onc.bookmarks", "onc.feelings", "onc.qs", "onc.study", "onc.ratings", "onc.viewed", "onc.words", "onc.journal"]);
 export const isList = (k: string) => LISTS.has(k);

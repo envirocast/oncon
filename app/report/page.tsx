@@ -101,8 +101,9 @@ function Actions({ d, title, json }: { d: ReportData; title: string; json: () =>
 function Conversation({ d, title }: { d: ReportData; title: string }) {
   const [open, setOpen] = useState<string | null>(d.turns.at(-1)?.id ?? null); const [trace, setTrace] = useState<string | null>(null); const stamp = useMemo(() => new Date().toLocaleString(), []);
   const json = () => download("onconnect-session-report.json", JSON.stringify({ generated: new Date().toISOString(), profile: d.profile, headline: d.headline, findings: d.insights, turns: d.turns.map(t => ({ n: t.n, question: t.question, topic: t.reply.topicId, model: t.reply.model, promptVersion: t.reply.promptVersion, mode: t.reply.mode, lang: t.reply.lang,
-    targetGrade: t.target, measuredGrade: t.grade, words: t.words, maxWords: t.maxWords, coverage: t.reply.coverage, signals: t.signals, memory: t.mem, adaptations: t.reply.adaptations, safety: t.reply.safety, source: t.reply.source, checks: checks(t), trace: t.reply.trace })) }, null, 2), "application/json");
+    targetGrade: t.target, measuredGrade: t.grade, words: t.words, maxWords: t.maxWords, coverage: t.reply.coverage, signals: t.signals, memory: t.mem, adaptations: t.reply.adaptations, safety: t.reply.safety, source: t.reply.source, references: t.reply.references ?? [], checks: checks(t), trace: t.reply.trace })) }, null, 2), "application/json");
   const pct = d.graded ? Math.round((d.within / d.graded) * 100) : null; const fb = Object.entries(d.feedback);
+  const references = [...new Map(d.turns.flatMap(t => t.reply.references ?? []).map(ref => [ref.id, ref] as const)).values()];
   return (<>
     <header className="rhead"><div className="eyebrow">Session report</div><h1>{title}</h1><p className="lede">{d.headline}</p>
       <div className="meta"><span>{stamp}</span><span>Ages {d.profile.age}, {d.profile.detail} detail</span><span>{d.models.map(m => m === "onconnect-templates" ? "built-in templates" : m).join(", ")}</span></div>
@@ -147,12 +148,15 @@ function Conversation({ d, title }: { d: ReportData; title: string }) {
 
     <section id="prov" className="rsec"><h2>Provenance</h2><p className="sub">Enough detail to reproduce or audit each answer.</p>
       <div className="wrap"><table><thead><tr><th>Reply</th><th>Model</th><th>Prompt</th><th>Mode</th><th>Language</th><th>Source</th><th>Time</th></tr></thead><tbody>
-        {d.turns.map(t => <tr key={t.id}><td>{t.n}</td><td>{t.reply.model ?? "templates"}</td><td>{t.reply.promptVersion ?? "n/a"}</td><td>{t.reply.mode ?? "adaptive"}</td><td>{t.reply.lang ?? "en"}</td><td>{t.reply.source ?? "none"}</td><td>{t.reply.ts ? new Date(t.reply.ts).toLocaleTimeString() : "n/a"}</td></tr>)}</tbody></table></div></section>
+        {d.turns.map(t => <tr key={t.id}><td>{t.n}</td><td>{t.reply.model ?? "templates"}</td><td>{t.reply.promptVersion ?? "n/a"}</td><td>{t.reply.mode ?? "adaptive"}</td><td>{t.reply.lang ?? "en"}</td><td>{t.reply.source ?? "none"}
+          {t.reply.references && <ul className="plain">{t.reply.references.map(ref => <li key={ref.id}><a href={ref.url} target="_blank" rel="noreferrer">{ref.title}</a><div className="muted">{ref.publisher}</div></li>)}</ul>}</td>
+          <td>{t.reply.ts ? new Date(t.reply.ts).toLocaleTimeString() : "n/a"}</td></tr>)}</tbody></table></div></section>
 
     <section id="learn" className="rsec"><h2>Learning summary</h2>
       {d.glossary.length ? <dl className="gloss">{d.glossary.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl> : <p className="muted">No glossary terms were introduced.</p>}
       <p className="muted">Reading a topic does not mean it was mastered, so understanding was not assessed.</p>
-      {d.sources.length > 0 && <><h3 className="h3">Sources</h3><ul className="plain">{d.sources.map(s => <li key={s}>{s}</li>)}</ul></>}<h3 className="h3">Feedback given</h3><p>{fb.length ? fb.map(([k, v]) => `${k} ×${v}`).join(", ") : "No feedback given."}</p></section>
+      {references.length > 0 && <><h3 className="h3">Sources linked in these answers</h3><ul className="plain">{references.map(ref => <li key={ref.id}><a href={ref.url} target="_blank" rel="noreferrer">{ref.title}</a> — {ref.publisher}</li>)}</ul></>}
+      <h3 className="h3">Feedback given</h3><p>{fb.length ? fb.map(([k, v]) => `${k} ×${v}`).join(", ") : "No feedback given."}</p></section>
 
     <section id="limits" className="rsec"><h2>Limits of this report</h2>
       <ul className="plain"><li>Reading grade uses the Flesch–Kincaid formula and works for English only. Per-sentence grades are noisy for short sentences. Coverage is a keyword heuristic. None is a clinical measure.</li>

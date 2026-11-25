@@ -32,7 +32,7 @@ export default function Analysis() {
   return (<>
     <div className="eyebrow">Research · Analysis</div><h1>Analyse your data</h1>
     <p>Statistics for the study you run, with effect sizes, bootstrap intervals and a rank-based check next to every test. Everything runs in this browser; nothing is uploaded.</p>
-    <div className="tabs" role="tablist">{([["study", "Comprehension study"], ["agree", "Clinician agreement"], ["csv", "Any CSV"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>)}</div>
+    <div className="tabs" role="tablist">{([["study", "Comprehension study"], ["agree", "Local review agreement"], ["csv", "Any CSV"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>)}</div>
 
     {tab === "study" && (sd.n === 0 ? <div className="card"><h2>No study data yet</h2><p className="muted">Responses collected on the Comprehension study page appear here. That page needs ethics approval before it is used with real participants. Use the <a href="/protocol">protocol page</a> to plan it, and the <a href="/eval">evaluation harness</a> for automated results meanwhile.</p></div> : <>
       <div className="kpi"><div><b>{sd.n}</b><span>Responses</span></div><div><b>{sd.score.a.n}</b><span>Adapted</span></div><div><b>{sd.score.b.n}</b><span>Generic</span></div></div>
@@ -40,8 +40,8 @@ export default function Analysis() {
       <div className="card"><h2>Self-rated clarity (1–5)</h2><Result r={sd.rate} /><p className="muted">Holm-adjusted p: {pv(adj[1])}.</p></div>
       <div className="card"><h2>Time to finish (seconds)</h2><Result r={sd.time} unit="s" /><p className="muted">Holm-adjusted p: {pv(adj[2])}.</p></div></>)}
 
-    {tab === "agree" && <div className="card"><h2>Do clinicians agree with each other?</h2>
-      <p className="muted">Cohen&apos;s kappa between pairs of different raters who reviewed the same topic on the Clinician review page. Decisions are categorical; the 1–5 scales use quadratic-weighted kappa. Landis and Koch&apos;s labels are a rough guide only.</p>
+    {tab === "agree" && <div className="card"><h2>Agreement in device-local reviews</h2>
+      <p className="muted">This historical device-local analysis uses self-entered rater labels and does not verify clinician identity. It is separate from the authenticated content-version review workflow. Cohen&apos;s kappa is between pairs of different labels for the same topic; decisions are categorical and the 1–5 scales use quadratic-weighted kappa. Landis and Koch&apos;s labels are a rough guide only.</p>
       {agree.n === 0 ? <p>Needs at least two raters reviewing the same topic. {ratings.length} review{ratings.length === 1 ? "" : "s"} recorded so far.</p> : <div className="wrap"><table><thead><tr><th>Measure</th><th>Pairs</th><th>Observed agreement</th><th>Kappa</th><th>Reading</th></tr></thead><tbody>
         {([["Decision", agree.decision], ["Accuracy", agree.acc], ["Age fit", agree.age], ["Safety", agree.safety]] as const).map(([l, k]) => <tr key={l}><td>{l}</td><td>{agree.n}</td><td>{k ? f(k.observed) : "–"}</td><td><b>{k ? f(k.kappa) : "–"}</b></td><td>{k ? kappaLabel(k.kappa) : "–"}</td></tr>)}</tbody></table></div>}
       {agree.n > 0 && agree.n < 10 && <p className="muted">Fewer than 10 pairs: kappa is very unstable. Treat as a rough signal.</p>}</div>}

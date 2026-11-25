@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { Bookmark, BookmarkCheck, Volume2 } from "lucide-react";
 import { WORDS } from "@/lib/more";
 import { useWordsSaved } from "@/lib/store";
+import { wordCitations } from "@/lib/sources";
+import Citations from "@/components/Citations";
 export default function Words() {
   const [q, setQ] = useState(""); const [cat, setCat] = useState("All"); const [letter, setLetter] = useState(""); const [saved, setSaved] = useWordsSaved(); const [only, setOnly] = useState(false); const [open, setOpen] = useState<string | null>(null);
   useEffect(() => { const p = new URLSearchParams(location.search).get("q"); if (p) { setQ(p); setOpen(p.toLowerCase()); } }, []);
@@ -20,6 +22,6 @@ export default function Words() {
         <button className="btn alt sm" onClick={() => setSaved(s => s.includes(w.term) ? s.filter(x => x !== w.term) : [...s, w.term])} aria-label="Save word">{saved.includes(w.term) ? <BookmarkCheck size={15} /> : <Bookmark size={15} />}</button></div>
       <p style={{ margin: "8px 0" }}>{w.simple}</p>
       <button className="btn alt sm" onClick={() => setOpen(open?.toLowerCase() === w.term.toLowerCase() ? null : w.term)}>{open?.toLowerCase() === w.term.toLowerCase() ? "Less" : "More"}</button>
-      {open?.toLowerCase() === w.term.toLowerCase() && <div style={{ marginTop: 10 }}><p>{w.detail}</p><p className="muted">{w.example}</p><div className="chips">{w.related.map(r => <button key={r} className="chip" onClick={() => { setQ(r); setOpen(r.toLowerCase()); window.scrollTo?.({ top: 0 }); }}>{r}</button>)}</div></div>}</div>)}
+      {open?.toLowerCase() === w.term.toLowerCase() && <div style={{ marginTop: 10 }}><p>{w.detail}</p><p className="muted">{w.example}</p><div className="chips">{w.related.map(r => <button key={r} className="chip" onClick={() => { setQ(r); setOpen(r.toLowerCase()); window.scrollTo?.({ top: 0 }); }}>{r}</button>)}</div><Citations items={wordCitations(w.cat)} /></div>}</div>)}
     {!list.length && <p className="muted">No matches.</p>}</>);
 }

@@ -12,6 +12,7 @@ import { LANGS, langOf } from "@/lib/langs";
 import { useSmooth } from "@/lib/useSmooth";
 import Md from "@/components/Md";
 import { shareAnswer } from "@/lib/research";
+import Citations from "@/components/Citations";
 
 const SUGGEST: [string, LucideIcon][] = [["What happens during a biopsy?", Stethoscope], ["What is an MRI?", Magnet], ["Can you explain a CT scan?", Scan], ["What does tissue mean?", BookOpen]];
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -112,9 +113,9 @@ export default function Chat() {
   const listen = () => { const SR = (window as unknown as { SpeechRecognition?: new () => any; webkitSpeechRecognition?: new () => any }); const C = SR.SpeechRecognition || SR.webkitSpeechRecognition; if (!C) return say("Voice input isn't supported in this browser. Try Chrome or Safari.");
     const r = new C(); r.lang = lang.speech; r.onresult = (e: any) => setInput(e.results[0][0].transcript); r.onend = () => setListening(false); r.onerror = () => { setListening(false); say("Couldn't hear that. Check microphone permission."); }; setListening(true); r.start(); };
   const copy = (m: Msg) => { navigator.clipboard?.writeText(m.text); setCopied(m.id); setTimeout(() => setCopied(null), 1200); };
-  const save = (m: Msg) => setMarks(b => b.some(x => x.id === m.id) ? b.filter(x => x.id !== m.id) : [...b, { id: m.id, title: TOPICS.find(t => t.id === m.reply?.topicId)?.title ?? "Explanation", text: m.text, ts: new Date().toISOString() }]);
-  const exportMd = () => { const body = msgs.map(m => `**${m.role === "user" ? "You" : "Onconnect"}:** ${m.text}`).join("\n\n"); const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([`# Onconnect conversation\n_${new Date().toLocaleString()} · ages ${profile.age} · ${lang.name}_\n\n${body}\n\n---\nGeneral education only, not advice about your own care. Draft content pending clinician review.\n`], { type: "text/markdown" })); a.download = "onconnect-conversation.md"; a.click(); };
+  const save = (m: Msg) => setMarks(b => b.some(x => x.id === m.id) ? b.filter(x => x.id !== m.id) : [...b, { id: m.id, title: TOPICS.find(t => t.id === m.reply?.topicId)?.title ?? "Explanation", text: m.text, ts: new Date().toISOString(), references: m.reply?.references }]);
+  const exportMd = () => { const body = msgs.map(m => `**${m.role === "user" ? "You" : "Onconnect"}:** ${m.text}${m.reply?.references?.length ? `\n\nSources:\n${m.reply.references.map(s => `- [${s.title}](${s.url}) — ${s.publisher}`).join("\n")}` : ""}`).join("\n\n"); const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([`# Onconnect conversation\n_${new Date().toLocaleString()} · ages ${profile.age} · ${lang.name}_\n\n${body}\n\n---\nGeneral education only, not advice about your own care. Check each answer's displayed source and review status; built-in draft content may be pending clinician review.\n`], { type: "text/markdown" })); a.download = "onconnect-conversation.md"; a.click(); };
 
   const onSel = () => { const s = window.getSelection(); const t = s?.toString().trim() ?? ""; if (!t || t.length > 40 || !s?.anchorNode?.parentElement?.closest(".btext")) { setPick(null); return; }
     const r = s.getRangeAt(0).getBoundingClientRect(); setPick({ text: t, x: r.left + r.width / 2, y: r.top }); };
@@ -135,7 +136,7 @@ export default function Chat() {
       <button type="button" className={"icon" + (listening ? " on" : "")} onClick={listen} aria-label="Voice input" title="Voice input"><Mic size={19} /></button>
       {busy ? <button type="button" className="send stopbtn" onClick={stop} aria-label="Stop answering"><Square size={13} fill="currentColor" /></button> : <button className="send" disabled={!input.trim()} aria-label="Send"><ArrowUp size={19} /></button>}
     </form>
-    <div className="fine">General education only, not advice about your own care. Draft content pending clinician review.</div>
+    <div className="fine">General education only, not advice about your own care. Built-in content may be draft; check each answer&apos;s source and review status.</div>
   </div></div>);
 
   return (<div className="chatwrap">
@@ -147,7 +148,7 @@ export default function Chat() {
       <button className="hbtn" onClick={exportMd} disabled={!msgs.length} title="Download this conversation" aria-label="Download conversation"><Download size={18} /></button>
       <button className="hbtn" onClick={() => window.print()} disabled={!msgs.length} title="Print or save as PDF for your care team" aria-label="Print"><Printer size={18} /></button>
       <button className={"hbtn" + (drawer ? " on" : "")} onClick={() => setDrawer(d => !d)} title="Research panel" aria-label="Research panel" aria-pressed={drawer}><PanelRight size={18} /></button></div>
-    {health && !health.ok && <div className="offline" role="status"><i />Offline mode: answers come from the built-in approved-content engine and are less flexible{lang.code !== "en" ? ", English only" : ""}.<button onClick={checkHealth}>Re-check</button></div>}
+    {health && !health.ok && <div className="offline" role="status"><i />Offline mode: answers come from the built-in source-linked content and are less flexible{lang.code !== "en" ? ", English only" : ""}.<button onClick={checkHealth}>Re-check</button></div>}
     {items.length === 0 ? <div className="empty"><div className="col760">
       <div className="bigmark" /><h1>What would you like to understand?</h1>
       <p className="lede">Explanations adapted to you, with a clear record of how.</p>
@@ -164,6 +165,7 @@ export default function Chat() {
             {m.stopped && <div className="muted" style={{ marginTop: 6, fontSize: "var(--t1)" }}>Stopped</div>}
             {m.reply && m.id !== live?.id && <>
               {m.reply.source && <div className="src"><ShieldCheck size={13} />{m.reply.source}</div>}
+              <Citations items={m.reply.references ?? []} />
               <details><summary>Why this explanation?</summary>
                 {m.reply.safety?.startsWith("SUPPORT") ? <p>This was a safety message. Nothing was personalized.</p> : <>
                   <b>What Onconnect used</b><ul>{m.reply.used.map(u => <li key={u}>{u}</li>)}</ul>

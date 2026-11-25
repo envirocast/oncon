@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { Angry, Annoyed, BatteryLow, CloudRain, Frown, Laugh, Meh, Smile, type LucideIcon } from "lucide-react";
 import { FEELINGS, JOURNAL, TRUSTED } from "@/lib/more";
 import { useFeelings, useLocal } from "@/lib/store";
+import Citations from "@/components/Citations";
+import { citations } from "@/lib/sources";
 
 const FACE: Record<string, LucideIcon> = { Good: Laugh, Calm: Smile, Okay: Meh, Worried: Annoyed, Sad: Frown, Angry: Angry, Tired: BatteryLow, Overwhelmed: CloudRain };
 const Face = ({ label, size = 16 }: { label: string; size?: number }) => { const I = FACE[label] ?? Meh; return <I size={size} aria-hidden />; };
@@ -21,7 +23,7 @@ export default function Feelings() {
     {tab === "checkin" && <div className="card"><h2>Check in</h2><div className="chips">{FEELINGS.map(f => <button key={f[1]} className={"chip" + (em?.[1] === f[1] ? " on" : "")} onClick={() => setEm(f)}><Face label={f[1]} />{f[1]}</button>)}</div>
       <label>What is it about? (optional)</label><div className="chips">{CONCERNS.map(c => <button key={c} className={"chip" + (con === c ? " on" : "")} onClick={() => setCon(con === c ? "" : c)}>{c}</button>)}</div>
       <label>A note (optional)</label><textarea className="big" style={{ minHeight: 80 }} value={note} onChange={e => setNote(e.target.value)} />
-      {flagged && <div className="banner" style={{ marginTop: 12 }}>I&apos;m glad you wrote that down. Please tell a trusted adult right now. If you are in danger, tell an adult immediately or call your local emergency number (in the US, call or text 988).</div>}
+      {flagged && <div className="banner" style={{ marginTop: 12 }}>I&apos;m glad you wrote that down. Please tell a trusted adult right now. If you are in danger, tell an adult immediately or call your local emergency number (in the US, call or text 988).<Citations items={citations(["988-lifeline"])} /></div>}
       <div className="row"><button className="btn" disabled={!em} onClick={() => { setList(l => [...l, { id: Math.random().toString(36).slice(2), ts: new Date().toISOString(), emoji: "", label: em![1], note, concern: con }]); setEm(null); setNote(""); setCon(""); setTab("history"); }}>Save check-in</button></div></div>}
     {tab === "history" && <div className="card"><h2>My check-ins</h2>{!list.length && <p className="muted">None yet.</p>}{[...list].reverse().map(f => <div key={f.id} className="step"><b><Face label={f.label} size={20} /></b><span style={{ flex: 1 }}>{f.label}{f.concern && <span className="tagl">{f.concern}</span>}{f.note && <div>{f.note}</div>}<div className="muted">{new Date(f.ts).toLocaleString()}</div></span></div>)}
       <p className="muted">These are your own notes, not clinical assessments.</p></div>}

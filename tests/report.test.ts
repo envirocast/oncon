@@ -26,7 +26,7 @@ describe("buildReport", () => {
 });
 describe("formatting and export", () => {
   it("formats signed numbers", () => { expect(fmt(2)).toBe("+2"); expect(fmt(-1)).toBe("−1"); expect(fmt(0)).toBe("0"); });
-  it("exports a markdown table with limits stated", () => { const md = reportMarkdown(buildReport(convo(), DEFAULT_PROFILE), "t"); expect(md).toMatch(/\| Reply \| Topic/); expect(md).toMatch(/not a clinical measure|Neither is a clinical measure/); expect(md).toMatch(/template engine/); });
+  it("exports a markdown table, source links, and limits", () => { const md = reportMarkdown(buildReport(convo(), DEFAULT_PROFILE), "t"); expect(md).toMatch(/\| Reply \| Topic/); expect(md).toContain("[Brain MRI](https://www.radiologyinfo.org/en/info/mri-brain)"); expect(md).toMatch(/not a clinical measure|Neither is a clinical measure/); expect(md).toMatch(/template engine/); });
 });
 
 import { aggregateLog, checks, heat, insights } from "@/lib/report";
