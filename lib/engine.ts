@@ -42,11 +42,76 @@ const CONCERN_PROMPTS: Record<string, string> = {
 };
 
 export function matchTopic(q: string): { topic: Topic; keyword: string } | null {
-  const s = q.toLowerCase(); let best: { topic: Topic; keyword: string } | null = null;
-  for (const t of TOPICS) for (const k of t.keywords) {
-    if (new RegExp(`\\b${k.replace(/ /g, "\\s+")}\\b`).test(s) && (!best || k.length > best.keyword.length)) best = { topic: t, keyword: k };
+  const normalized = normalize(q);
+  if (!normalized) return null;
+
+  const aliases: Record<string, string[]> = {
+    ct: ["cat scan", "ct scan", "computerized tomography", "computerised tomography"],
+    mri: ["magnetic resonance", "magnetic resonance imaging", "mri scan"],
+    pet: ["pet ct", "pet/ct", "pet scan", "positron emission tomography"],
+    xray: ["x ray", "x-ray", "xray", "radiograph", "chest x ray"],
+    cbc: ["complete blood count", "cbc", "blood cell count"],
+    "bone-marrow": ["bone marrow aspiration", "bone marrow biopsy", "marrow biopsy", "bone marrow test"],
+    "lumbar-puncture": ["lumbar puncture", "spinal tap", "lp procedure"],
+    "side-effects": ["side effect", "side effects", "treatment side effects", "treatment side effect"],
+    "clinical-trial": ["clinical trial", "clinical trials", "cancer study", "research study"],
+  };
+  const tokens = normalized.split(" ").filter(Boolean);
+  let best: { topic: Topic; keyword: string; score: number } | null = null;
+
+  for (const topic of TOPICS) {
+    const candidates = [...topic.keywords, ...(aliases[topic.id] ?? [])];
+    for (const candidate of candidates) {
+      const keyword = normalize(candidate);
+      if (!keyword) continue;
+      const keywordTokens = keyword.split(" ").filter(Boolean);
+      const exact = normalized === keyword || normalized.includes(keyword);
+      const tokenCoverage = keywordTokens.filter(kToken => tokens.some(tToken =>
+        tToken === kToken || editDistance(tToken, kToken) <= (kToken.length >= 7 ? 2 : kToken.length >= 4 ? 1 : 0)
+      )).length / keywordTokens.length;
+      const score = exact ? 100 + keyword.length : tokenCoverage * 100;
+      if (score >= 80 && (!best || score > best.score)) {
+        best = { topic, keyword: candidate, score };
+      }
+    }
   }
-  return best;
+  return best ? { topic: best.topic, keyword: best.keyword } : null;
+}
+
+export function matchMedicalWord(q: string): { term: string; definition: string } | null {
+  const normalized = normalize(q);
+  if (!normalized) return null;
+  let best: { term: string; definition: string; length: number } | null = null;
+  for (const [term, definition] of Object.entries(GLOSSARY)) {
+    const key = normalize(term);
+    if (normalized === key || normalized.includes(key)) {
+      if (!best || key.length > best.length) best = { term, definition, length: key.length };
+    }
+  }
+  return best ? { term: best.term, definition: best.definition } : null;
+}
+
+function normalize(q: string): string {
+  return q.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\bc t\b/g, "ct")
+    .replace(/\bm r i\b/g, "mri")
+    .replace(/\bmr i\b/g, "mri")
+    .replace(/\bp e t\b/g, "pet")
+    .replace(/\s+/g, " ").trim();
+}
+
+function editDistance(a: string, b: string): number {
+  if (Math.abs(a.length - b.length) > 2) return Math.abs(a.length - b.length);
+  const previous = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const current = [i];
+    for (let j = 1; j <= b.length; j++) {
+      current[j] = Math.min(current[j - 1] + 1, previous[j] + 1, previous[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    for (let j = 0; j <= b.length; j++) previous[j] = current[j];
+  }
+  return previous[b.length];
 }
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 
@@ -105,8 +170,30 @@ export function respond(question: string, p: Profile, lastTopic: string | null, 
 
   if (!topic) {
     add("RETRIEVE", `retrieve(source_linked_content, topic=∅)`, "no supported source-linked topic matched; no model answer generated", "skipped");
+    const word = matchMedicalWord(question);
+    if (word) {
+      add("MEDICAL_WORD", `match_glossary(question)`, `${word.term} → plain-language definition`, "ok");
+      return { ...base, notDone, trace, memory, signals, plan, adaptations: ["VOCABULARY_DEFINED"],
+        text: `${word.term}: ${word.definition}\n\nThis is general education, not advice about your own care.`,
+        used: [`The medical word "${word.term}" was matched in the built-in glossary.`],
+        changed: ["Defined the medical word in plain language."] };
+    }
+    const plain = normalize(question);
+    if (/^(hi|hello|hey|good morning|good afternoon|good evening)[!.]?$/i.test(plain)) {
+      add("CONVERSATION", `match(greeting, question)`, "friendly greeting, offered supported subjects", "ok");
+      return { ...base, notDone, trace, memory, signals, plan,
+        text: "Hi! Ask me about a procedure, scan, blood test, cancer treatment, or another supported medical topic. I can also explain a medical word.",
+        used: ["A greeting was recognized."], changed: ["Answered directly instead of listing every topic."] };
+    }
+    if (/^(thanks|thank you|thx)[!.]?$/i.test(plain)) {
+      add("CONVERSATION", `match(thanks, question)`, "acknowledgement", "ok");
+      return { ...base, notDone, trace, memory, signals, plan,
+        text: "You're welcome. Ask if you want to understand another topic or medical word.",
+        used: ["A thanks message was recognized."], changed: ["Answered directly."] };
+    }
     return { ...base, notDone, trace, memory, signals, plan, safety: advice ? "INDIVIDUAL_ADVICE_REDIRECT" : null, adaptations: advice ? ["SAFETY_INDIVIDUAL_ADVICE_REDIRECT"] : [],
-      text: (advice ? "That's an important question, and it's best answered by your own healthcare team because they know your situation. " : "") + "I can explain topics like: " + TOPICS.map(t => t.title).join(", ") + ". Which one would you like to learn about? You can also ask me what a medical word means." };
+      text: (advice ? "That's an important question, and it's best answered by your own healthcare team because they know your situation. " : "") +
+        "I don't have enough information to match that to a supported topic. Which one would you like to learn about? Name a topic such as MRI, CT scan, biopsy, blood test, or chemotherapy. You can also ask what a medical word means." };
   }
   add("RETRIEVE", `retrieve(source_linked_content, topic=${topic.id})`, `${topic.id}: ${Object.keys(topic.why).length} level texts, ${topic.steps.length} steps, ${topic.terms.length} terms, ${topicCitations(topic.id).length} source links`);
 

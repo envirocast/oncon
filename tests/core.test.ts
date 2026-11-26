@@ -47,6 +47,16 @@ describe("stats", () => {
 
 describe("engine", () => {
   it("matches the longest keyword", () => { expect(matchTopic("what is a ct scan")?.topic.id).toBe("ct"); });
+  it("matches basic text variants and small topic typos", () => {
+    expect(matchTopic("Can you explain an MR I?")?.topic.id).toBe("mri");
+    expect(matchTopic("tell me about biopsies")?.topic.id).toBe("biopsy");
+    expect(matchTopic("what is a spinal tap")?.topic.id).toBe("lumbar-puncture");
+    expect(matchTopic("I need info about chemptherapy")?.topic.id).toBe("chemotherapy");
+  });
+  it("answers greetings and unknown text directly instead of repeating every topic", () => {
+    expect(respond("hello", DEFAULT_PROFILE, null).text).toMatch(/Hi!/);
+    expect(respond("explain quantum bananas", DEFAULT_PROFILE, null).text).not.toMatch(/I can explain topics like/);
+  });
   it("provides at least one valid source reference for every supported topic", () => {
     const sourceIds = new Set(SOURCES.map(source => source.id));
     for (const topic of TOPICS) {

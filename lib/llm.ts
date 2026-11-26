@@ -5,7 +5,11 @@ export type { Turn, GenResult };
 export interface LLM { name: "gemini" | "openrouter"; key: string; model: string; }
 
 export function pickLLM(): LLM | null {
-  const g = process.env.GEMINI_API_KEY?.trim(), o = process.env.OPENROUTER_API_KEY?.trim(); const want = process.env.LLM_PROVIDER?.toLowerCase();
+  // Vercel variables are server-only unless NEXT_PUBLIC_* is used. Read provider keys only
+  // on the server and trim them so accidental whitespace does not invalidate credentials.
+  const g = (process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY)?.trim();
+  const o = (process.env.OPENROUTER_API_KEY || process.env.OPEN_ROUTER_API_KEY)?.trim();
+  const want = process.env.LLM_PROVIDER?.toLowerCase();
   const useOr = want === "openrouter" ? !!o : want === "gemini" ? false : !!o;
   if (useOr && o) return { name: "openrouter", key: o, model: OR_MODEL() };
   if (g) return { name: "gemini", key: g, model: G_MODEL };
