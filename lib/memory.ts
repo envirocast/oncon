@@ -11,14 +11,14 @@ export interface Memory extends Snap {
 export const DEFAULT_MEMORY: Memory = { levelShift: 0, lengthBias: 0, scaffold: 0, confusion: {}, understood: {}, exampleAffinity: 0, stepAffinity: 0, turns: 0, events: [] };
 
 const R = {
-  MORE: /(too (simple|basic|easy|short|childish)|more (detail|detailed|complex|technical|advanced)|tell me more|elaborate|go deeper|in more depth|expand on)/i,
-  CONF: /(don'?t (really )?(understand|get)|do not understand|confus|doesn'?t make sense|what do you mean|\bhuh\b|lost me|i'?m lost|makes no sense|unclear|still don'?t)/i,
-  SIMP: /(simpler|simple terms|easier|too (hard|complex|complicated|difficult|technical|long words)|dumb (it )?down|like i'?m (5|five)|eli5|plain (words|english))/i,
-  SHORT: /(shorter|too long|too much|be brief|briefly|tl;?dr|summari[sz]e|quick(er)? (answer|version)|in a sentence)/i,
+  MORE: /(too (simple|basic|easy|short|childish)|more (detail|detailed|complex|technical|advanced|context)|tell me more|elaborate|go deeper|in more depth|expand on|go into more detail)/i,
+  CONF: /(don'?t (really )?(understand|get|follow)|do not understand|confus|doesn'?t make sense|what do you mean|\bhuh\b|lost me|i'?m lost|makes no sense|unclear|still don'?t|not following|rephrase|say that another way)/i,
+  SIMP: /(simpler|simple terms|easier|too (hard|complex|complicated|difficult|technical|long words)|dumb (it )?down|like i'?m (5|five)|eli5|plain (words|english|language)|less jargon|explain (it )?simply)/i,
+  SHORT: /(shorter|too long|too much|be brief|briefly|tl;?dr|summari[sz]e|quick(er)? (answer|version)|in a sentence|bottom line|just the gist)/i,
   LONG: /(longer|full explanation|in depth|thorough|too short|more information|more info)/i,
   OK: /(got it|i (get|understand) (it|now)|makes sense|that helps|clear now|thank(s| you)|okay i see|ok i see)/i,
   EX: /(example|analogy|like what|show me|for instance)/i,
-  STEP: /(step by step|steps|walk me through|in order)/i,
+  STEP: /(step by step|steps|walk me through|in order|what happens (first|next|then))/i,
 };
 export function detectSignals(q: string): Signal[] {
   const out = new Set<Signal>();

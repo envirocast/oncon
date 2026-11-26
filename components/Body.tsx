@@ -27,7 +27,10 @@ export interface Label { id: string; name: string; ax: number; ay: number; side:
 export const LABELS: Label[] = [
   { id: "brain", name: "Brain", ax: 138, ay: 28, side: "r", y: 30 }, { id: "lungs", name: "Lungs", ax: 152, ay: 112, side: "r", y: 94 },
   { id: "heart", name: "Heart", ax: 138, ay: 142, side: "r", y: 140 }, { id: "liver", name: "Liver", ax: 88, ay: 184, side: "l", y: 184 },
+  { id: "spleen", name: "Spleen", ax: 151, ay: 180, side: "r", y: 174 },
+  { id: "lymph-nodes", name: "Lymph nodes", ax: 84, ay: 126, side: "l", y: 126 },
   { id: "stomach", name: "Stomach & intestines", ax: 156, ay: 196, side: "r", y: 192 }, { id: "kidneys", name: "Kidneys", ax: 138, ay: 214, side: "r", y: 238 },
+  { id: "pancreas", name: "Pancreas", ax: 120, ay: 205, side: "r", y: 210 }, { id: "bladder", name: "Bladder", ax: 120, ay: 244, side: "r", y: 258 },
   { id: "bone", name: "Bones & marrow", ax: 98, ay: 330, side: "l", y: 330 }, { id: "vessels", name: "Blood vessels", ax: 134, ay: 340, side: "r", y: 340 },
 ];
 
@@ -55,10 +58,14 @@ export default function Body({ selected, onSelect }: { selected: string; onSelec
         <path d="M114 98 C102 94 90 102 86 122 C82 142 84 160 92 168 C102 174 112 168 114 156 C116 140 116 112 114 98Z" />
         <path d="M126 98 C138 94 150 102 154 122 C158 140 156 158 148 166 C140 170 132 166 130 160 C134 150 126 140 126 130 C126 120 126 108 126 98Z" /></Org>
       <Org id="heart"><path d="M128 132 C128 126 137 124 139 131 C141 138 134 146 128 156 C122 146 115 138 117 131 C119 124 128 126 128 132Z" /></Org>
+      <Org id="lymph-nodes"><g><circle cx="84" cy="126" r="3" /><circle cx="88" cy="132" r="3" /><circle cx="78" cy="132" r="3" />{both("M78 132 C72 130 68 128 64 126")}</g></Org>
       <Org id="liver"><path d="M84 172 C100 168 124 170 138 174 C142 186 134 198 118 202 C102 206 88 200 84 188 C82 182 82 176 84 172Z" /></Org>
+      <Org id="spleen"><path d="M145 174 C151 169 159 174 158 182 C157 190 151 195 145 192 C142 189 143 179 145 174Z" /></Org>
       <Org id="stomach"><path d="M136 178 C148 174 160 182 158 194 C156 206 144 212 136 208 C130 204 134 196 132 190 C130 184 132 180 136 178Z" />
         <path className="ln thick" d="M92 256 L92 222 Q92 218 96 218 L144 218 Q148 218 148 222 L148 256" /><path className="ln" d="M100 230 C108 226 112 236 120 232 C128 228 132 238 140 234 M100 242 C108 238 112 248 120 244 C128 240 132 250 140 246" /></Org>
+      <Org id="pancreas"><path d="M105 198 C112 193 120 195 126 198 C132 195 139 197 141 201 C137 205 130 205 125 203 C119 207 111 206 105 203Z" /></Org>
       <Org id="kidneys">{both("M104 204 C97 204 95 214 99 223 C103 229 109 226 110 219 C108 213 110 206 104 204Z")}</Org>
+      <Org id="bladder"><path d="M112 237 C115 234 125 234 128 237 C131 241 129 250 124 254 L120 258 L116 254 C111 250 109 241 112 237Z" /></Org>
       <Org id="vessels"><path className="hit" d="M124 150 C124 190 124 230 122 268 C116 300 112 330 108 384 C108 430 108 470 104 508 M122 268 C128 300 128 330 132 384 C132 430 132 470 136 508 M112 108 C96 104 78 108 64 120 C58 150 54 190 48 250 M128 108 C144 104 162 108 176 120 C182 150 186 190 192 250" />
         <path className="ln" d="M124 150 C124 190 124 230 122 268 C116 300 112 330 108 384 C108 430 108 470 104 508 M122 268 C128 300 128 330 132 384 C132 430 132 470 136 508 M112 108 C96 104 78 108 64 120 C58 150 54 190 48 250 M128 108 C144 104 162 108 176 120 C182 150 186 190 192 250" /></Org>
 

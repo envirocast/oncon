@@ -4,10 +4,9 @@ import { useRouter } from "next/navigation";
 import { useMemory, useProfile } from "@/lib/store";
 import { DEFAULT_MEMORY } from "@/lib/memory";
 import { TOPICS, PROFILES, type Level } from "@/lib/content";
-import { LEARNING_PREFERENCES, type Profile } from "@/lib/engine";
+import { LEARNING_PREFERENCES, PROFILE_CONCERNS, type Profile } from "@/lib/engine";
 import { LANGS } from "@/lib/langs";
 
-const CONCERNS = ["I don't know what will happen", "I'm confused about medical words", "I'm worried about pain or discomfort", "I'm worried about missing school", "I have questions I don't know how to ask"];
 const FORMATS: [Profile["format"][number], string][] = [["steps", "Step by step"], ["examples", "Give me examples"], ["define", "Explain medical words"], ["check", "Ask me if I understand"]];
 
 export default function Setup() {
@@ -35,7 +34,7 @@ export default function Setup() {
     {step === 1 && <><h1>What would you like help understanding?</h1>
       <div className="chips">{TOPICS.map(t => <Chip key={t.id} on={p.topics.includes(t.id)} onClick={() => setP({ ...p, topics: toggle(p.topics, t.id) })}>{t.title}</Chip>)}</div>
       <label>Anything you're particularly concerned about? (optional)</label>
-      <div className="chips">{CONCERNS.map(c => <Chip key={c} on={p.concerns.includes(c)} onClick={() => setP({ ...p, concerns: toggle(p.concerns, c) })}>{c}</Chip>)}</div>
+      <div className="chips">{PROFILE_CONCERNS.map(c => <Chip key={c} on={p.concerns.includes(c)} onClick={() => setP({ ...p, concerns: toggle(p.concerns, c) })}>{c}</Chip>)}</div>
       <p className="muted">You never have to share a diagnosis. What you enter here is not verified by a healthcare professional.</p></>}
     {step === 2 && <><h1>How should Onconnect explain things?</h1>
       <div className="chips">{(["short", "balanced", "detailed"] as const).map(d => <Chip key={d} on={p.detail === d} onClick={() => setP({ ...p, detail: d })}>{d === "short" ? "Short" : d === "balanced" ? "Balanced" : "Detailed"}</Chip>)}</div>

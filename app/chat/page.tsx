@@ -130,7 +130,7 @@ export default function Chat() {
 
   const composerEl = (<div className="composer"><div className="col760">
     <form className="pill" onSubmit={e => { e.preventDefault(); busy ? stop() : send(input); }}>
-      <textarea ref={ta} rows={1} value={input} placeholder="Ask about a procedure, scan, or medical word" aria-label="Your question" maxLength={1000} dir="auto"
+      <textarea ref={ta} rows={1} value={input} placeholder="Ask about a medical word, test, treatment, report, or what your care team said" aria-label="Your question" maxLength={1000} dir="auto"
         onChange={e => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = Math.min(180, e.target.scrollHeight) + "px"; }}
         onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }} />
       <button type="button" className={"icon" + (listening ? " on" : "")} onClick={listen} aria-label="Voice input" title="Voice input"><Mic size={19} /></button>
